@@ -1,10 +1,19 @@
 import { useState } from 'react';
-import { StyleSheet, Text, TextInput, View, Button, FlatList } from 'react-native';
+import { styles } from './styles';
+import { Text, TextInput, View, Button, FlatList, Modal, TouchableOpacity } from 'react-native';
 
 export default function App() {
   const [task, setTask] = useState('');
   const [tasksList, setTasksList] = useState([]);
   const [tasksCounter, setTasksCounter] = useState(0);
+
+  const [showModal, setShowModal] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
+
+  const onHandleSelect = (item) => {
+    setSelectedTask(item);
+    setShowModal(true);
+  }
 
   const onHandleAdd = () => {
     setTasksList((prev) => [...prev, {id: Math.random().toString(), value: task}]);
@@ -12,16 +21,23 @@ export default function App() {
     setTasksCounter(tasksCounter + 1);
   }
 
+  const onHandleCancel = () => {
+    setShowModal(false);
+    setTask('');
+    setSelectedTask(null);
+  }
+
   const onHandleDelete = (id) => {
     setTasksList((prev) => prev.filter((task) => task.id !== id));
     setTask('');
     (tasksCounter > 0) ? setTasksCounter(tasksCounter - 1) : setTasksCounter(0);
+    setShowModal(false);
   }
 
   const renderItem = ({item}) => (
     <View key={item.id} style={styles.listItem}>
       <Text style={styles.listTask}>{item.value}</Text>
-      <Text onPress={() => onHandleDelete(item.id)} style={styles.itemRemoveButton}> X </Text>
+      <Text onPress={() => { onHandleSelect(item); setShowModal(true)} } style={styles.itemRemoveButton}> X </Text>
     </View>
   )
 
@@ -43,84 +59,28 @@ export default function App() {
           data={tasksList}
           renderItem={renderItem}
           keyExtractor={item => item.id}
-          ListEmptyComponent={<Text style={styles.emptyList}>No tasks yet..</Text>}
+          ListEmptyComponent={
+            <View style={styles.emptyListContainer}>
+              <Text style={styles.emptyList}>No tasks yet..</Text>
+            </View>
+          }
           showsVerticalScrollIndicator={false}
         />
+        <Modal visible={showModal} animationType="fade">
+          <View style={styles.modalDetailsContainer}>
+            <Text style={styles.modalDetailsText}>Are you sure you want to delete this task?</Text>
+            <Text style={styles.selectedTask}>{selectedTask?.value}</Text>
+            <View style={styles.modalActionsContainer}>
+              <TouchableOpacity style={styles.deleteButton} onPress={() => onHandleDelete(selectedTask?.id)}>
+                <Text style={styles.modalAction}>Delete!</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.cancelButton} onPress={() => onHandleCancel()}>
+                <Text style={styles.modalAction}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#67beff',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    margin: 10,
-    marginTop: 45,
-    marginBottom: 10,
-    padding: 5,
-    paddingHorizontal: 10,
-    borderRadius: 5,
-  },
-  input: {
-    width: '80%',
-    fontSize: 16,
-    color: '#666',
-    backgroundColor: '#ffffef',
-    paddingHorizontal: 10,
-    borderRadius: 5,
-  },
-  listContainer: {
-    flex: 1,
-    marginHorizontal: 10,
-    borderRadius: 5,
-  },
-  listTitle: {
-    color: '#243e5c',
-    marginHorizontal: 10,
-    marginTop: 20,
-    marginBottom: 10,
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  listItemContainer: {
-    marginVertical: 10,
-    padding: 5,
-    borderRadius: 2,
-  },
-  listItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 8,
-    backgroundColor: '#00a6ff',
-    margin: 3,
-    borderRadius: 5,
-  },
-  listTask: {
-    color: '#ffffef',
-    fontSize: 16,
-    padding: 8,
-    margin: 3,
-  },
-  emptyList: {
-    color: '#243e5c',
-    marginHorizontal: 10,
-    marginBottom: 10,
-    fontSize: 16,
-    fontStyle: 'italic',
-  },
-  itemRemoveButton: {
-    backgroundColor: '#41aefc',
-    color: '#fff',
-    fontSize: 12,
-    padding: 10,
-    marginRight: 5,
-    borderRadius: 20,
-    alignSelf: 'center',
-    width: 'auto',
-  },
-});
